@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rainy Mood 2.0</title>
+    <style>
+        * {
+            margin: 0;
+        }
+
+        body {
+            overflow: hidden;
+        }
+
+        .page {
+            background-color: rgb(30, 30, 50, 1);
+            height : 100vh;
+            width: 100vw;
+        }
+
+        #canvasOverlay {
+            background-color: rgb(30, 30, 50, 1);
+            height : 100vh;
+            width: 100vw;
+            position: absolute;
+            margin: auto;
+            left: 0;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            background: rgba(30, 30, 50, 1);
+        }
+
+        /*Rain goes down here*/
+        canvas {
+            position: absolute;
+            margin: auto;
+            left: 0;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            background: rgba(30, 30, 50, 1);
+        }
+
+        #playPauseButton {
+            position: absolute;
+            margin: auto;
+            left: 0;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            height: 180px;
+            width: 180px;
+
+            background-color: transparent;
+            border: 3px solid white;
+            color : white;
+            font-size: 24px;;
+            border-radius: 90px;
+        }
+
+        #credits, #createdBy {
+            opacity: 0.3;
+            font-weight: 100;
+            font-family: Verdana, sans-serif;
+            font-size: 12px;
+            position: absolute;
+            bottom: 8px;
+
+            transition: opacity 1s;
+        }
+
+        #credits:hover, #createdBy:hover {
+            opacity: 1;
+        }
+
+        #credits {
+            left: 8px;
+        }
+
+        #createdBy {
+            right : 8px;
+        }
+
+        @media screen and (max-width: 480px) {
+            #credits {
+                bottom: 60px;
+            }
+
+            #createdBy {
+                right : unset;
+                left: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <canvas id="particleCanvas"> </canvas>
+        <div id="canvasOverlay"></div>
+        <button id="playPauseButton" onclick="playPause()">Make it Rain</button>
+        <audio src="https://rainymood.com/audio1112/0.m4a" id="player"></audio>
+        <div id="credits">
+            <h3>Credits:</h3>
+            <p><b>Rainy Mood, for the audio: <a href="https://rainymood.com/" target="_blank">rainymood.com</a></b></p>
+            <p><b>SidneyD, for the rain particles (source code in codepen): <a href="https://codepen.io/SidneyD/pen/MYbzPj" target="_blank">SidneyD, rain particles at codepen</a></b></p>
+        </div>
+        <div id="createdBy">
+            <b>Felipe Oliveira, Github: <a href="https://github.com/felipepoliveira" target="_blank">github.com</a></b>
+        </div>
+    </div>
+    <script>
+        var player = document.getElementById('player');
+        var playPauseButton = document.getElementById('playPauseButton');
+        var canvasOverlay = document.getElementById('canvasOverlay');
+        
+        //Rain goes down here...
+        var ctx;
+        var cW;
+        var cH;
+        var playing = false;
+        var loading = false;
+
+        var raindrops;
+
+        var rainStrength = 15;
+        player.play();
+        player.volume = 0;
+
+        function playPause() {
+            if (loading || !ctx) {
+                return;
+            }
+
+            playing = !playing;
+            loading = true;
+            if (playing) {
+                //Volume
+                let interval = setInterval(() => {
+                    playPauseButton.innerText = "Make it Stop";
+                    let volume = player.volume + 0.1;
+                    if (volume > 1) volume = 1;
+                    player.volume = volume;
+                    console.log('Aumentando volume...', player.volume);
+                    if (player.volume === 1) {
+                        loading = false;
+                        clearInterval(interval);
+                    }
+                }, 100);
+
+                //Rain overlay
+                let top = 0;
+                let factor = 1;
+                let limit = 200;
+                let interval2 = setInterval(() => {
+                    top += factor;
+                    if (top > limit) top = limit;
+                    canvasOverlay.style.top = `${top}vh`;
+                    if (top === limit) {
+                        clearInterval(interval2);
+                    }
+                }, 10);
+
+            }
+            else {
+                let interval = setInterval(() => {
+
+                    playPauseButton.innerText = "Make it Rain";
+
+                    //Volume
+                    let volume = player.volume - 0.1;
+                    if (volume < 0) volume = 0;
+                    player.volume = volume;
+                    console.log('Abaixando volume...', player.volume)
+                    if (player.volume === 0) {
+                        loading = false;
+                        clearInterval(interval);
+                    }
+                }, 100);
+
+                //Rain overlay
+                let top = -200;
+                let factor = 2;
+                let limit = 0;
+                canvasOverlay.style.top = `${top}vh`;
+                let interval2 = setInterval(() => {
+                    top += factor;
+                    if (top > limit) top = limit;
+                    canvasOverlay.style.top = `${top}vh`;
+                    if (top === limit) {
+                        clearInterval(interval2);
+                    }
+                }, 10);
+            }
+
+            cW = ctx.canvas.width;
+            cH = ctx.canvas.height;
+        }
+
+        function initCanvas() {
+
+            ctx = document.getElementById("particleCanvas").getContext("2d");
+
+            ctx.canvas.width = screen.width;
+            ctx.canvas.height = screen.height;
+
+            cW = ctx.canvas.width;
+            cH = ctx.canvas.height;
+
+        }
+
+        function Raindrops() {
+
+            this.x;
+            this.y;
+            this.s;
+            this.width;
+            this.height;
+
+            this.drops = [];
+            this.splashes = [];
+
+        }
+        Raindrops.prototype.addDrop = function() {
+            
+            this.x = (Math.random() * (cW + 100)) - 100;
+            this.y = 0;
+            this.s = (Math.random() * 7) + 2;
+
+            this.drops.push({
+                x: this.x,
+                y: this.y,
+                velY: 2,
+                width: this.s / 3,
+                height: this.s * 1.2,
+                speed: this.s,
+                life: 60
+            });
+
+        };
+        Raindrops.prototype.render = function() {
+
+            for (var i = 0; i < rainStrength; i++) {
+                this.addDrop();
+            };
+            
+            ctx.save();
+
+            ctx.clearRect(0, 0, cW, cH);
+
+            ctx.fillStyle = 'rgba(50, 80, 200, 1)';
+            for (var i = 0; i < this.drops.length; i++) {
+                var drop = this.drops[i];
+
+                ctx.fillRect(drop.x, drop.y, drop.width, drop.height);
+                drop.y += drop.speed * 2;
+                drop.x += 2;
+
+                if (drop.y + drop.height > cH) {
+                    this.splashes.push(drop);
+
+                    this.drops.splice(i, 1);
+                }
+            };
+
+            for (var i = 0; i < this.splashes.length; i++) {
+                var splash = this.splashes[i];
+
+                ctx.fillRect(splash.x, splash.y, splash.width/3, splash.height/3);
+
+                splash.y -= splash.velY * splash.speed / 6;
+                splash.life--;
+                splash.velY -= 0.1;
+                splash.x += 0.15 * splash.speed;
+
+                if (splash.life <= 0 ) {
+                    this.splashes.splice(i, 1);
+                }
+                
+            };
+
+            ctx.restore();
+
+        };
+
+
+        function init() {
+
+            raindrops = new Raindrops();
+
+            loop();
+        }
+
+        function render() {
+
+            raindrops.render();
+
+        }
+
+        function loop() {
+
+            requestAnimationFrame(loop);
+            render();
+
+        }
+
+        window.addEventListener('load', function() {
+            initCanvas();
+            init();
+        });
+
+    </script>
+</body>
+</html>
