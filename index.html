@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,7 +12,7 @@
         }
 
         a {
-            color : rgb(180, 180, 230);
+            color: rgb(180, 180, 230);
         }
 
         body {
@@ -20,13 +21,44 @@
 
         .page {
             background-color: rgb(30, 30, 50, 1);
-            height : 100vh;
+            height: 100vh;
             width: 100vw;
+        }
+
+        .slider {
+            -webkit-appearance: none;
+            width: 30%;
+            height: 12px;
+            background: #d3d3d3;
+            outline: none;
+            opacity: 0.7;
+            -webkit-transition: .2s;
+            transition: opacity .2s;
+        }
+
+        .slider:hover {
+            opacity: 1;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 12px;
+            height: 12px;
+            background: rgb(76, 91, 175);
+            cursor: pointer;
+        }
+
+        .slider::-moz-range-thumb {
+            width: 25px;
+            height: 25px;
+            background: rgb(76, 83, 175);
+            cursor: pointer;
         }
 
         #canvasOverlay {
             background-color: rgb(30, 30, 50, 1);
-            height : 100vh;
+            height: 100vh;
             width: 100vw;
             position: absolute;
             margin: auto;
@@ -60,12 +92,22 @@
 
             background-color: transparent;
             border: 3px solid white;
-            color : white;
-            font-size: 24px;;
+            color: white;
+            font-size: 24px;
+            ;
             border-radius: 90px;
         }
 
-        #credits, #createdBy {
+        #volume {
+            position: absolute;
+            margin: auto;
+            left: 0;
+            right: 0;
+            bottom: 25vh;
+        }
+
+        #credits,
+        #createdBy {
             opacity: 0.3;
             font-weight: 100;
             font-family: Verdana, sans-serif;
@@ -76,7 +118,8 @@
             transition: opacity 1s;
         }
 
-        #credits:hover, #createdBy:hover {
+        #credits:hover,
+        #createdBy:hover {
             opacity: 1;
         }
 
@@ -85,7 +128,7 @@
         }
 
         #createdBy {
-            right : 8px;
+            right: 8px;
         }
 
         @media screen and (max-width: 480px) {
@@ -94,22 +137,26 @@
             }
 
             #createdBy {
-                right : unset;
+                right: unset;
                 left: 8px;
             }
         }
     </style>
 </head>
+
 <body>
     <div class="page">
         <canvas id="particleCanvas"> </canvas>
         <div id="canvasOverlay"></div>
         <button id="playPauseButton" onclick="playPause()">Make it Rain</button>
-        <audio src="https://rainymood.com/audio1112/0.m4a" id="player"></audio>
+        <input type="range" min="1" max="100" value="100" class="slider" id="volume" onchange="volumeChange()">
+        <audio autoplay="true" loop="true" src="https://rainymood.com/audio1112/0.m4a" id="player"></audio>
         <div id="credits">
             <h3>Credits:</h3>
             <p><b>Rainy Mood, for the audio: <a href="https://rainymood.com/" target="_blank">rainymood.com</a></b></p>
-            <p><b>SidneyD, for the rain particles (source code in codepen): <a href="https://codepen.io/SidneyD/pen/MYbzPj" target="_blank">SidneyD, rain particles at codepen</a></b></p>
+            <p><b>SidneyD, for the rain particles (source code in codepen): <a
+                        href="https://codepen.io/SidneyD/pen/MYbzPj" target="_blank">SidneyD, rain particles at
+                        codepen</a></b></p>
         </div>
         <div id="createdBy">
             <b>Felipe Oliveira, Github: <a href="https://github.com/felipepoliveira" target="_blank">github.com</a></b>
@@ -117,9 +164,10 @@
     </div>
     <script>
         var player = document.getElementById('player');
+        var volume = document.getElementById('volume');
         var playPauseButton = document.getElementById('playPauseButton');
         var canvasOverlay = document.getElementById('canvasOverlay');
-        
+
         //Rain goes down here...
         var ctx;
         var cW;
@@ -129,26 +177,33 @@
 
         var raindrops;
 
-        var rainStrength = 15;
-        player.play();
+        var rainStrength = 10;
         player.volume = 0;
 
-        function playPause() {
+        function volumeChange(e) {
+            player.volume = volume.value / 100;            
+            rainStrength = 20 * player.volume;
+        }
+
+        function playPause() {            
             if (loading || !ctx) {
                 return;
             }
+
+            volumeChange();
 
             playing = !playing;
             loading = true;
             if (playing) {
                 //Volume
+                let volLimit = player.volume;
                 let interval = setInterval(() => {
                     playPauseButton.innerText = "Make it Stop";
                     let volume = player.volume + 0.1;
                     if (volume > 1) volume = 1;
                     player.volume = volume;
                     console.log('Aumentando volume...', player.volume);
-                    if (player.volume === 1) {
+                    if (player.volume >= volLimit) {
                         loading = false;
                         clearInterval(interval);
                     }
@@ -227,8 +282,8 @@
             this.splashes = [];
 
         }
-        Raindrops.prototype.addDrop = function() {
-            
+        Raindrops.prototype.addDrop = function () {
+
             this.x = (Math.random() * (cW + 100)) - 100;
             this.y = 0;
             this.s = (Math.random() * 7) + 2;
@@ -244,12 +299,12 @@
             });
 
         };
-        Raindrops.prototype.render = function() {
+        Raindrops.prototype.render = function () {
 
             for (var i = 0; i < rainStrength; i++) {
                 this.addDrop();
             };
-            
+
             ctx.save();
 
             ctx.clearRect(0, 0, cW, cH);
@@ -272,17 +327,17 @@
             for (var i = 0; i < this.splashes.length; i++) {
                 var splash = this.splashes[i];
 
-                ctx.fillRect(splash.x, splash.y, splash.width/3, splash.height/3);
+                ctx.fillRect(splash.x, splash.y, splash.width / 3, splash.height / 3);
 
                 splash.y -= splash.velY * splash.speed / 6;
                 splash.life--;
                 splash.velY -= 0.1;
                 splash.x += 0.15 * splash.speed;
 
-                if (splash.life <= 0 ) {
+                if (splash.life <= 0) {
                     this.splashes.splice(i, 1);
                 }
-                
+
             };
 
             ctx.restore();
@@ -310,11 +365,12 @@
 
         }
 
-        window.addEventListener('load', function() {
+        window.addEventListener('load', function () {
             initCanvas();
             init();
         });
 
     </script>
 </body>
+
 </html>
